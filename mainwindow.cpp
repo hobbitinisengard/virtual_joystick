@@ -5,12 +5,17 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    installEventFilter(this);
 
-    button_bindings = new BindingStruct(ui->AllButtons_ComboBox, ui->ListWidget_ButtonBindings);
-    axes_bindings = new BindingStruct(ui->AllButtonsAndAxesComboBox, ui->listWidget_AxesBinding);
+    button_bindings = new BindingStruct(ui->AllButtons_ComboBox,
+                                        ui->ListWidget_ButtonBindings, SignalType::BUTTON);
+    axes_bindings = new BindingStruct(ui->AllButtonsAndAxesComboBox,
+                                      ui->listWidget_AxesBinding, SignalType::AXIS);
 
-    Assert_vjoy_exists(1);
-
+    Assert_vjoy_exists(0);
+//    if (!DriverMatch(&VerDll, &VerDrv))
+//    _tprintf("Failed\r\nvJoy Driver (version %04x) does not match\
+//    vJoyInterface DLL (version %04x)\n", VerDrv ,VerDll);
     // Get the driver attributes (Vendor ID, Product ID, Version Number)
     if (!vJoyEnabled())
     {
@@ -23,10 +28,9 @@ MainWindow::MainWindow(QWidget *parent)
     };
 
     // Get the status of the vJoy device before trying to acquire it
-    vJDevice *device = nullptr;
     try
     {
-        device = new vJDevice();
+        current_device = new vJDevice();
     }
     catch(VjdStat Error)
     {
@@ -44,29 +48,60 @@ MainWindow::MainWindow(QWidget *parent)
         };
     }
 
-    devices.push_back(device);
-    Fill_bindings();
+    devices[0] = current_device;
+    Initialize_comboboxes(current_device);
 }
 void MainWindow::Quit()
 {
     for(const auto device : devices)
-        RelinquishVJD(device->device_id);
+        RelinquishVJD(device->id);
     QApplication::quit();
 }
+void MainWindow::Initialize_comboboxes(vJDevice *device)
+{
+    {
+    // populate button combobox
+    QStringListModel *button_model = new QStringListModel(this);
+    QStringList button_list;
+    int buttons_number = GetVJDButtonNumber(device->id);
+    for(int i=0; i<buttons_number; ++i){
+        button_list << "Button " + QString::number(i+1);
+    }
+    button_model->setStringList(button_list);
+    button_bindings->comboBox->setModel(button_model);
+    }
 
-bool MainWindow::eventFilter(QObject *obj, QEvent *event)
- {
-     if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
-         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
-         //qDebug("Ate key press %d", keyEvent->key());
+    // populate data from .ini or memory
+    // code
 
-        // for po wektorze przypisanych klawiszy
+    // populate axis combobox
+    QStringListModel *axes_model = new QStringListModel(this);
+    QStringList buttonaxes_list;
+    for(int i=0; i<10; ++i){
+        if(!GetVJDAxisExist(device->id, i))
+        {
+            qCritical("MAX axis i ");
+            break;
+        }
+        buttonaxes_list <<  "Axis " + QString::number(i+1);
+    }
 
+    axes_model->setStringList(buttonaxes_list);
+    axes_bindings->comboBox->setModel(axes_model);
 
+    // populate data from .ini or memory
+    // code
+}
+void MainWindow::Load_configuration()
+{
 
+}
+void MainWindow::Save_configuration()
+{
 
-         // The structure that holds the full position data
-         //JOYSTICK_POSITION_V2 iReport;
+}
+// The structure that holds the full position data
+//JOYSTICK_POSITION_V2 iReport;
 //         USHORT X = 0;
 //         USHORT Y = 0;
 //         USHORT Z = 0;
@@ -91,13 +126,31 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 //             Btns = 1<<(Z/4000);
 //             iReport.lButtons = Btns;
 //         }
-         // end
+// end
+// core feeder
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+     if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
+         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+
+         for(auto& binding : bindings)
+         {
+             //event->key() != Qt::Key_Escape
+             if(binding->key == keyEvent->key())
+             {
+                 devices[binding->device_id-1]->Send_data(
+                             binding->type, event->type() == QEvent::KeyPress, 1);
+             }
+         }
+         qInfo("Ate key press %d", keyEvent->key());
+
+
          return true;
      } else {
          // standard event processing
          return QObject::eventFilter(obj, event);
      }
- }
+}
 void MainWindow::Create_OK_MessageBox(QString text)
 {
     QMessageBox msgBox;
@@ -107,6 +160,10 @@ void MainWindow::Create_OK_MessageBox(QString text)
 }
 void MainWindow::Assert_vjoy_exists(byte vjoy_no)
 {
+    WORD VerDll, VerDrv;
+    if (!DriverMatch(&VerDll, &VerDrv))
+        qWarning("Failed\r\nvJoy Driver (version %04x) does not match\
+            vJoyInterface DLL (version %04x)\n", VerDrv ,VerDll);
     while(1)
     {
         if(!vJoyEnabled() || GetVJDStatus(1) == VJD_STAT_MISS || GetVJDStatus(1) == VJD_STAT_UNKN){
@@ -125,30 +182,7 @@ void MainWindow::Assert_vjoy_exists(byte vjoy_no)
         }
     }
 }
-void MainWindow::Fill_bindings()
-{
-    {
-    // populate button bindings
-    QStringListModel *button_model = new QStringListModel(this);
-    QStringList button_list;
-    for(int i=0; i<32; ++i)
-        button_list << "Button " + QString::number(i+1);
-    button_model->setStringList(button_list);
-    button_bindings->comboBox->setModel(button_model);
-    //button_bindings.data->
-    }
 
-    // populate data from .ini or memory
-    // code
-
-    // populate axes bindings
-    QStringListModel *axes_model = new QStringListModel(this);
-    QStringList buttonaxes_list;
-    for(int i=0; i<32; ++i)
-        buttonaxes_list << "Button " + QString::number(i+1);
-    axes_model->setStringList(buttonaxes_list);
-    axes_bindings->comboBox->setModel(axes_model);
-}
 
 MainWindow::~MainWindow()
 {
@@ -166,7 +200,7 @@ void MainWindow::on_Button_ScanButtonOrAxis_clicked()
 
 void MainWindow::Scan(BindingStruct *binding_struct)
 {
-    ScanBox *Scanning_monolog_box = new ScanBox(binding_struct);
+    ScanBox *Scanning_monolog_box = new ScanBox(binding_struct, current_device, &bindings);
     Scanning_monolog_box->exec();
     delete Scanning_monolog_box;
 }

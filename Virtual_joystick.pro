@@ -6,13 +6,13 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++2a
 
 SOURCES += \
-    bindingstruct.cpp \
     main.cpp \
     mainwindow.cpp \
     scanbox.cpp \
   vjdevice.cpp
 
 HEADERS += \
+  binding.h \
     bindingstruct.h \
    mainwindow.h \
    scanbox.h \

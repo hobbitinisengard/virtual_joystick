@@ -16,7 +16,7 @@
 #include <scanbox.h>
 #include <bindingstruct.h>
 #include <vjdevice.h>
-
+#include <binding.h>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -45,16 +45,39 @@ private:
     Ui::MainWindow *ui;
     BindingStruct *button_bindings = nullptr;
     BindingStruct *axes_bindings = nullptr;
-    vJDevice *dev = nullptr;
-    QVector<vJDevice*> devices;
+    vJDevice *current_device;
+    vJDevice *devices[16];
+    QList<Binding*> bindings;
+//    const QString axes[18] {
+//        "Throttle",
+//        "Rudder",
+//        "Aileron",
+//        "AxisX",
+//        "AxisY",
+//        "AxisZ",
+//        "AxisXRot",
+//        "AxisYRot",
+//        "AxisZRot",
+//        "Slider",
+//        "Dial",
+//        "Wheel",
+//        "AxisVX",
+//        "AxisVY",
+//        "AxisVZ",
+//        "AxisVBRX",
+//        "AxisVBRY",
+//        "AxisVBRZ"
+//    };
     void Populate_joystick_buttons_menu(QStringListModel *model);
     void Scan(BindingStruct *binding_struct);
-    void Fill_bindings();
+    void Initialize_comboboxes(vJDevice *device);
     bool Vjoy_device_exist(byte vjoy_no);
     void Assert_vjoy_exists(byte vjoy_no);
     void Create_OK_MessageBox(QString text);
     void Quit();
     bool eventFilter(QObject *obj, QEvent *event);
 
+    void Load_configuration();
+    void Save_configuration();
 };
 #endif // MAINWINDOW_H
