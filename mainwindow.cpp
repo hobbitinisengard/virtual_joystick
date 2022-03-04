@@ -12,22 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
     axes_bindings = new BindingStruct(ui->AllButtonsAndAxesComboBox,
                                       ui->listWidget_AxesBinding, SignalType::AXIS);
 
-    Assert_vjoy_exists(0);
-//    if (!DriverMatch(&VerDll, &VerDrv))
-//    _tprintf("Failed\r\nvJoy Driver (version %04x) does not match\
-//    vJoyInterface DLL (version %04x)\n", VerDrv ,VerDll);
-    // Get the driver attributes (Vendor ID, Product ID, Version Number)
-    if (!vJoyEnabled())
-    {
-        Create_OK_MessageBox("Function vJoyEnabled failed; Make sure that vJoy " + VJOY_VERSION + "is installed and enabled");
-        QCoreApplication::quit();
-    }
-    else
-    {
-       // wprintf(L"Vendor: %s\nProduct :%s\nVersion Number:%s\n", static_cast<TCHAR *> (GetvJoyManufacturerString()), static_cast<TCHAR *>(GetvJoyProductString()), static_cast<TCHAR *>(GetvJoySerialNumberString()));
-    };
-
-    // Get the status of the vJoy device before trying to acquire it
+    Initialize_VJoy(0);
     try
     {
         current_device = new vJDevice();
@@ -77,13 +62,13 @@ void MainWindow::Initialize_comboboxes(vJDevice *device)
     // populate axis combobox
     QStringListModel *axes_model = new QStringListModel(this);
     QStringList buttonaxes_list;
-    for(int i=0; i<10; ++i){
-        if(!GetVJDAxisExist(device->id, i))
+    for(size_t i=0; i<axisdata.size(); ++i){
+        if(!GetVJDAxisExist(device->id, axisdata[i]->macro))
         {
             qCritical("MAX axis i ");
             break;
         }
-        buttonaxes_list <<  "Axis " + QString::number(i+1);
+        buttonaxes_list << axisdata[i]->name;
     }
 
     axes_model->setStringList(buttonaxes_list);
@@ -100,56 +85,18 @@ void MainWindow::Save_configuration()
 {
 
 }
-// The structure that holds the full position data
-//JOYSTICK_POSITION_V2 iReport;
-//         USHORT X = 0;
-//         USHORT Y = 0;
-//         USHORT Z = 0;
-//         LONG   Btns = 0;
-//         PVOID pPositionMessage;
-//         UINT	IoCode = LOAD_POSITIONS;
-//         UINT	IoSize = sizeof(JOYSTICK_POSITION);
-//         while (1)
-//         {
-//             // Set target vJoy device
-//             byte id = (byte)device_id;
-//             iReport.bDevice = id;
-
-//             // Set position data of 3 first axes
-//             if (Z>35000) Z=0;
-//             Z += 200;
-//             iReport.wAxisZ = Z;
-//             iReport.wAxisX = 32000-Z;
-//             iReport.wAxisY = Z/2+7000;
-
-//             // Set position data of first 8 buttons
-//             Btns = 1<<(Z/4000);
-//             iReport.lButtons = Btns;
-//         }
-// end
-// core feeder
-bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+void MainWindow::KeyPressAction(const WPARAM wParam, const int keyCode, const QString &keyname)
 {
-     if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
-         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
-
-         for(auto& binding : bindings)
-         {
-             //event->key() != Qt::Key_Escape
-             if(binding->key == keyEvent->key())
-             {
-                 devices[binding->device_id-1]->Send_data(
-                             binding->type, event->type() == QEvent::KeyPress, 1);
-             }
-         }
-         qInfo("Ate key press %d", keyEvent->key());
-
-
-         return true;
-     } else {
-         // standard event processing
-         return QObject::eventFilter(obj, event);
-     }
+    //qDebug() << wParam << " " << keyCode << " " << keyname;
+    for(auto& binding : bindings)
+    {
+        //event->key() != Qt::Key_Escape
+        if(binding->key == keyCode)
+        {
+            devices[binding->device_id-1]->Send_data(binding, WM_KEYDOWN == wParam);
+        }
+    }
+    //qInfo("Ate key press %d", keyEvent->key());
 }
 void MainWindow::Create_OK_MessageBox(QString text)
 {
@@ -158,15 +105,19 @@ void MainWindow::Create_OK_MessageBox(QString text)
     msgBox.setText(text);
     msgBox.exec();
 }
-void MainWindow::Assert_vjoy_exists(byte vjoy_no)
+void MainWindow::Initialize_VJoy(byte vjoy_no)
 {
     WORD VerDll, VerDrv;
-    if (!DriverMatch(&VerDll, &VerDrv))
-        qWarning("Failed\r\nvJoy Driver (version %04x) does not match\
+    if (!DriverMatch(&VerDll, &VerDrv)){
+        qCritical("Failed\r\nvJoy Driver (version %04x) does not match\
             vJoyInterface DLL (version %04x)\n", VerDrv ,VerDll);
+        throw "DLL and driver versions do not match";
+    }
+
     while(1)
     {
-        if(!vJoyEnabled() || GetVJDStatus(1) == VJD_STAT_MISS || GetVJDStatus(1) == VJD_STAT_UNKN){
+        if(!vJoyEnabled() || GetVJDStatus(1) == VJD_STAT_MISS || GetVJDStatus(1) == VJD_STAT_UNKN)
+        {
             QMessageBox msgBox;
             msgBox.setWindowTitle("");
             msgBox.setText("Device vjoy" + QString::number(vjoy_no) + " is not active. Enable it in 'Configure VJoy' program.");
@@ -181,6 +132,7 @@ void MainWindow::Assert_vjoy_exists(byte vjoy_no)
             break;
         }
     }
+    ResetAll();
 }
 
 
@@ -200,7 +152,7 @@ void MainWindow::on_Button_ScanButtonOrAxis_clicked()
 
 void MainWindow::Scan(BindingStruct *binding_struct)
 {
-    ScanBox *Scanning_monolog_box = new ScanBox(binding_struct, current_device, &bindings);
+    ScanBox *Scanning_monolog_box = new ScanBox(binding_struct, current_device, bindings, axisdata);
     Scanning_monolog_box->exec();
     delete Scanning_monolog_box;
 }

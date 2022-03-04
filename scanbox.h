@@ -5,14 +5,13 @@
 #include <QtGui>
 #include <QListWidget>
 #include <QMessageBox>
-#include <bindingstruct.h>
 #include <vjdevice.h>
-#include <binding.h>
+#include <Structs.h>
 class ScanBox : public QMessageBox
 {
 public:
-    ScanBox(BindingStruct *CONTAINER, vJDevice *DEVICE, QList<Binding*> *BINDINGS)
-        : binding_struct (CONTAINER), device(DEVICE), bindings(BINDINGS)
+    ScanBox(BindingStruct *CONTAINER, vJDevice *DEVICE, QList<Binding*> &BINDINGS, const std::vector<AxisData*> &AXISDATA)
+        : binding_struct (CONTAINER), device(DEVICE), bindings(BINDINGS), axisdata(AXISDATA)
     {
         this->setWindowTitle("Scanning...");
         this->setText("Press desired button or move axis ...");
@@ -21,7 +20,8 @@ public:
     BindingStruct *binding_struct;
     void keyPressEvent(QKeyEvent *event);
     vJDevice* device;
-    QList<Binding*> *bindings;
+    QList<Binding*> bindings;
+    const std::vector<AxisData*> axisdata;
 };
 
 #endif // SCANBOX_H

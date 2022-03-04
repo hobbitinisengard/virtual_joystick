@@ -58,104 +58,76 @@ vJDevice::vJDevice(int DEVICE_ID)
     // All FFB activity is performed in a separate thread created when registered the callback function
 }
 
-void vJDevice::Feed_data()
-{
-    iReport.bDevice = this->id;
-    iReport.lButtons = 10;
-    // Send position data to vJoy device
-    PVOID pPositionMessage = (PVOID)(&iReport);
+//void vJDevice::Feed_data()
+//{
+//    iReport.bDevice = this->id;
+//    iReport.lButtons = 10;
+//    // Send position data to vJoy device
+//    PVOID pPositionMessage = (PVOID)(&iReport);
 
-    if (!UpdateVJD(this->id, pPositionMessage))
-    {
-        qWarning("Feeding vJoy device number %d failed - try to enable device then press enter\n", id);
-        Sleep(500);
-        //getchar();
-        AcquireVJD(id);
-    }
-    Sleep(2);
-}
+//    if (!UpdateVJD(this->id, pPositionMessage))
+//    {
+//        qWarning("Feeding vJoy device number %d failed - try to enable device then press enter\n", id);
+//        Sleep(500);
+//        //getchar();
+//        AcquireVJD(id);
+//    }
+//    Sleep(2);
+//}
 //ResetVJD(UINT rID);			// Reset all controls to predefined values in the specified VDJ
 //ResetAll(void);				// Reset all controls to predefined values in all VDJ
 //ResetButtons(UINT rID);		// Reset all buttons (To 0) in the specified VDJ
 //ResetPovs(UINT rID);		// Reset all POV Switches (To -1) in the specified VDJ
 //SetAxis(LONG Value, UINT rID, UINT Axis);		// Write Value to a given axis defined in the specified VDJ
+// value 1-32768
+// AXIS | MACRO | VALUE
+//X HID_USAGE_X 0x30 (-x, 0, +x)
+//Y HID_USAGE_Y 0x31
+//Z HID_USAGE_Z 0x32
+//Rx HID_USAGE_RX 0x33 (0, +x)
+//Ry HID_USAGE_RY 0x34
+//Rz HID_USAGE_RZ 0x35
+//Slider0 HID_USAGE_SL0 0x36
+//Slider1 HID_USAGE_SL1 0x37
+//Wheel HID_USAGE_WHL 0x38
+//do not use ->POV HID_USAGE_POV 0x39
 //SetBtn(BOOL Value, UINT rID, UCHAR nBtn);		// Write Value to a given button defined in the specified VDJ
 //SetDiscPov(int Value, UINT rID, UCHAR nPov);	// Write Value to a given descrete POV defined in the specified VDJ
+//nPov values:
+//0 North (or Forwards)
+//1 East (or Right)
+//2 South (or backwards)
+//3 West (or left)
+//-1 Neutral (Nothing pressed)
 //SetContPov(DWORD Value, UINT rID, UCHAR nPov);	// Write Value to a given continuous POV defined in the specified VDJ
-void vJDevice::Send_data(SignalType type, bool Pressed_notReleased, uint16_t value)
+// nPov: 1-4 (which POV to use)
+/* Value: -1 (neutral); 0-35999 represents its position in 1/100 degree units, where 0 signifies North (or forwards),
+9000 signifies East (or right), 18000 signifies South (or backwards), 27000 signifies West (or left) and so
+forth.
+*/
+void vJDevice::Send_data(const Binding *binding, const bool Pressed_notReleased) const
 {
-    bool succeded = SetBtn(true, 1,1);
-
-    switch(type)
+    bool succeeded = false;
+    qDebug() << "Send_data";
+    switch(binding->type)
     {
     case SignalType::BUTTON:
-        //SetBtn(Pressed_notReleased, id, value);
+        succeeded = SetBtn(Pressed_notReleased, id, binding->macro);
         break;
     case SignalType::AXIS:
-        SetAxis(65534, id, value);
+        if(binding->direction == Direction::POSITIVE)
+            succeeded = SetAxis(Pressed_notReleased ? 32767 : 16383, id, binding->macro);
+        else
+            succeeded = SetAxis(Pressed_notReleased ? 0 : 16383, id, binding->macro);
         break;
     case SignalType::DISCRETE_POV:
+        succeeded = SetDiscPov(65534, id, binding->macro);
         break;
     case SignalType::CONTINUOUS_POV:
+        succeeded = SetContPov(65534, id, binding->macro);
         break;
     }
-//    switch(type){
-//    case BUTTONAXIS::lButtons:
-//        if(Pressed_notReleased)
-//            iReport.lButtons |= 1<<value;
-//        else
-//            iReport.lButtons &= ~(1UL<<1);
-//        break;
-//    case BUTTONAXIS::wThrottle:
-//        break;
-//    case BUTTONAXIS::wRudder:
-//        break;
-//    case BUTTONAXIS::wAileron:
-//        break;
-//    case BUTTONAXIS::wAxisX:
-//        break;
-//    case BUTTONAXIS::wAxisY:
-//        break;
-//    case BUTTONAXIS::wAxisZ:
-//        break;
-//    case BUTTONAXIS::wAxisXRot:
-//        break;
-//    case BUTTONAXIS::wAxisYRot:
-//        break;
-//    case BUTTONAXIS::wAxisZRot:
-//        break;
-//    case BUTTONAXIS::wSlider:
-//        break;
-//    case BUTTONAXIS::wDial:
-//        break;
-//    case BUTTONAXIS::wWheel:
-//        break;
-//    case BUTTONAXIS::wAxisVX:
-//        break;
-//    case BUTTONAXIS::wAxisVY:
-//        break;
-//    case BUTTONAXIS::wAxisVZ:
-//        break;
-//    case BUTTONAXIS::wAxisVBRX:
-//        break;
-//    case BUTTONAXIS::wAxisVBRY:
-//        break;
-//    case BUTTONAXIS::wAxisVBRZ:
-//        break;
-//    case BUTTONAXIS::bHats:
-//        break;
-//    case BUTTONAXIS::bHatsEx1:
-//        break;
-//    case BUTTONAXIS::bHatsEx2:
-//        break;
-//    case BUTTONAXIS::bHatsEx3:
-//        break;
-//    case BUTTONAXIS::lButtonsEx1:
-//        break;
-//    case BUTTONAXIS::lButtonsEx2:
-//        break;
-//    case BUTTONAXIS::lButtonsEx3:
-//        break;
-//    }
-    //this->Feed_data();
+    if(!succeeded){
+        qWarning("Couldn't send signal to vjoystick");
+    }
 }

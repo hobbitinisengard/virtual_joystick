@@ -12,8 +12,7 @@ SOURCES += \
   vjdevice.cpp
 
 HEADERS += \
-  binding.h \
-    bindingstruct.h \
+  Structs.h \
    mainwindow.h \
    scanbox.h \
 	  public.h \
@@ -34,7 +33,7 @@ DISTFILES += \
   lib/amd64/vJoyInterface.dll \
   lib/amd64/vJoyInterface.lib
 
-win32: LIBS += -L$$PWD/lib/amd64/ -lvJoyInterface
+win32: LIBS += -L$$PWD/lib/amd64/ -lvJoyInterface -lUser32
 
 INCLUDEPATH += $$PWD/lib/amd64
 DEPENDPATH += $$PWD/lib/amd64
