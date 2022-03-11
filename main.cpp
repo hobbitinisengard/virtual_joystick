@@ -3,6 +3,7 @@
 #include <QApplication>
 HHOOK hHook = nullptr;
 int dummy = 0;
+int test  = 0;
 QApplication a(dummy,nullptr);
 MainWindow mainwindow;
 void UpdateKeyState(BYTE *keystate, int keycode)
@@ -39,17 +40,21 @@ LRESULT CALLBACK MyLowLevelKeyBoardProc(int nCode, WPARAM wParam, LPARAM lParam)
         dwMsg += cKey.scanCode << 16;
         dwMsg += cKey.flags << 24;
 
-        int i = GetKeyNameText(dwMsg, (LPTSTR)lpszName, 255);
+        //int i = GetKeyNameText(dwMsg, (LPTSTR)lpszName, 255);
 
         //Try to convert the key information
-        int result = ToUnicodeEx(cKey.vkCode, cKey.scanCode, keyboard_state, buffer, 4, 0, keyboard_layout);
-        buffer[4] = L'\0';
+        //int result = ToUnicodeEx(cKey.vkCode, cKey.scanCode, keyboard_state, buffer, 4, 0, keyboard_layout);
+        //buffer[4] = L'\0';
 
         //Print the output
-        qDebug() << "Key: " << cKey.vkCode << " " << QString::fromUtf16((ushort*)buffer) << " "
-                 << QString::fromUtf16((ushort*)lpszName);
+        //qDebug() << "Key: " << cKey.vkCode << " " << QString::fromUtf16((ushort*)buffer) << " "<< QString::fromUtf16((ushort*)lpszName);
         QString keyname = QString::fromUtf16((ushort*)lpszName);
-        mainwindow.KeyPressAction(wParam, cKey.vkCode, keyname);
+
+        //qDebug() << "test=" << ++test;
+        QEvent::Type keypressType = (wParam == WM_KEYDOWN) ? QKeyEvent::KeyPress : QKeyEvent::KeyRelease;
+        QKeyEvent event(keypressType, cKey.vkCode, Qt::NoModifier,0,0,0,keyname);
+        QApplication::sendEvent(&mainwindow, &event);
+        //mainwindow.KeyPressAction(wParam, cKey.vkCode, keyname);
     }
 
     return CallNextHookEx(hHook, nCode, wParam, lParam);

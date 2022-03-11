@@ -1,6 +1,7 @@
 #ifndef SCANBOX_H
 #define SCANBOX_H
 #include <QMainWindow>
+#include <QAbstractButton>
 #include <QtCore>
 #include <QtGui>
 #include <QListWidget>
@@ -10,17 +11,19 @@
 class ScanBox : public QMessageBox
 {
 public:
-    ScanBox(BindingStruct *CONTAINER, vJDevice *DEVICE, QList<Binding*> &BINDINGS, const std::vector<AxisData*> &AXISDATA)
-        : binding_struct (CONTAINER), device(DEVICE), bindings(BINDINGS), axisdata(AXISDATA)
+    ScanBox(BindingStruct &CONTAINER, vJDevice *DEVICE, QList<Binding*> &BINDINGS, const std::vector<AxisData*> &AXISDATA)
+        : QMessageBox(), binding_struct (CONTAINER), device(DEVICE), bindings(BINDINGS), axisdata(AXISDATA)
     {
         this->setWindowTitle("Scanning...");
         this->setText("Press desired button or move axis ...");
-        this->setButtonText(QMessageBox::Ok, tr("Cancel"));
+        this->setStandardButtons(QMessageBox::NoButton);
+        //this->setButtonText(QMessageBox::Ok, tr("Cancel"));
+
     };
-    BindingStruct *binding_struct;
+    BindingStruct &binding_struct;
     void keyPressEvent(QKeyEvent *event);
     vJDevice* device;
-    QList<Binding*> bindings;
+    QList<Binding*>& bindings; // <- when passing an object by reference, member has to be a reference as well
     const std::vector<AxisData*> axisdata;
 };
 

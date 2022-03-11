@@ -3,9 +3,12 @@ vJDevice::vJDevice()
     : vJDevice(1)
 {};
 
-
 vJDevice::vJDevice(int DEVICE_ID)
 {
+    if(!(DEVICE_ID >=1 && DEVICE_ID<=16))
+    {
+        throw std::out_of_range("device_id must be in scope of [1;16]");
+    }
     id = DEVICE_ID;
     VjdStat status = GetVJDStatus(id);
     switch (status)
@@ -18,16 +21,15 @@ vJDevice::vJDevice(int DEVICE_ID)
         break;
     case VJD_STAT_BUSY:
         qWarning("vJoy device %d is already owned by another feeder\nCannot continue\n", id);
-        //throw Create_OK_MessageBox("This device is already owned by another feeder");
-        throw "This device is already owned by another feeder";
+        throw new VJD_STAT_BUSY_Exception();
+        //throw "This device is already owned by another feeder";
     case VJD_STAT_MISS:
         qWarning("vJoy device %d is not installed or disabled\nCannot continue\n", id);
-        //Create_OK_MessageBox("This vJoy device is not installed or disabled. Stopped.");
-        throw "This vJoy device is not installed or disabled. Stopped.";
+        throw new VJD_STAT_MISS_Exception();
     default:
         qWarning("vJoy device %d general error\nCannot continue\n", id);
         //Create_OK_MessageBox("vJoy device general error. Cannot continue.");
-        throw "vJoy device general error";
+        throw new std::exception();
     };
 
     // Acquire the vJoy device
@@ -105,26 +107,32 @@ vJDevice::vJDevice(int DEVICE_ID)
 9000 signifies East (or right), 18000 signifies South (or backwards), 27000 signifies West (or left) and so
 forth.
 */
-void vJDevice::Send_data(const Binding *binding, const bool Pressed_notReleased) const
+void vJDevice::Send_data(const Binding *binding, const bool Pressed_notReleased)
 {
     bool succeeded = false;
-    qDebug() << "Send_data";
+    int value = -1;
+    int npov = 1;
+    qDebug() << Pressed_notReleased;
     switch(binding->type)
     {
     case SignalType::BUTTON:
-        succeeded = SetBtn(Pressed_notReleased, id, binding->macro);
+        succeeded = SetBtn(Pressed_notReleased, binding->device_id, binding->macro);
         break;
     case SignalType::AXIS:
         if(binding->direction == Direction::POSITIVE)
-            succeeded = SetAxis(Pressed_notReleased ? 32767 : 16383, id, binding->macro);
+            succeeded = SetAxis(Pressed_notReleased ? 32767 : 16383, binding->device_id, binding->macro);
         else
-            succeeded = SetAxis(Pressed_notReleased ? 0 : 16383, id, binding->macro);
+            succeeded = SetAxis(Pressed_notReleased ? 0 : 16383, binding->device_id, binding->macro);
         break;
     case SignalType::DISCRETE_POV:
-        succeeded = SetDiscPov(65534, id, binding->macro);
+        if(Pressed_notReleased){
+            value = (uint8_t)binding->macro; // <0; 3>
+            npov = (uint8_t)(binding->macro >> 8); // <1;4>
+        }
+        succeeded = SetDiscPov(value, binding->device_id, npov);
         break;
     case SignalType::CONTINUOUS_POV:
-        succeeded = SetContPov(65534, id, binding->macro);
+        succeeded = SetContPov(65534, binding->device_id, binding->macro);
         break;
     }
     if(!succeeded){
