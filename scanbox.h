@@ -11,8 +11,8 @@
 class ScanBox : public QMessageBox
 {
 public:
-    ScanBox(BindingStruct &CONTAINER, vJDevice *DEVICE, QList<Binding*> &BINDINGS, const std::vector<AxisData*> &AXISDATA)
-        : QMessageBox(), binding_struct (CONTAINER), device(DEVICE), bindings(BINDINGS), axisdata(AXISDATA)
+    ScanBox(BindingStruct &CONTAINER, vJDevice *DEVICE, QList<Binding*> &BINDINGS)
+        : QMessageBox(), binding_struct (CONTAINER), device(DEVICE), bindings(BINDINGS)
     {
         this->setWindowTitle("Scanning...");
         this->setText("Press desired button or move axis ...");
@@ -24,7 +24,6 @@ public:
     void keyPressEvent(QKeyEvent *event);
     vJDevice* device;
     QList<Binding*>& bindings; // <- when passing an object by reference, member has to be a reference as well
-    const std::vector<AxisData*> axisdata;
 };
 
 #endif // SCANBOX_H

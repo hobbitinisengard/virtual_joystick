@@ -27,29 +27,7 @@ void ScanBox::keyPressEvent(QKeyEvent *event)
         uint8_t selected_combobox_id = binding_struct.comboBox->currentIndex();
         binding_struct.comboBox->setCurrentIndex((selected_combobox_id+1) % binding_struct.comboBox->count());
         uint16_t macro = 0;
-        Binding *binding;
-        switch(binding_struct.type)
-        {
-        case SignalType::BUTTON:
-            macro = selected_combobox_id+1; // buttons's indexes start from 1
-            binding = new Binding(device->id, binding_struct.type, event->key(), macro);
-            break;
-        case SignalType::AXIS:
-            macro = axisdata[selected_combobox_id]->macro;
-            binding = new Binding(device->id, binding_struct.type, event->key(),
-                                  macro, axisdata[selected_combobox_id]->direction);
-            break;
-        case SignalType::DISCRETE_POV:
-            // encode button number in bits 0-8
-            macro = selected_combobox_id % 4;
-            // encode pov number in bits 9-16
-            macro |= (((selected_combobox_id) / 4) + 1) << 8;
-            binding = new Binding(device->id, binding_struct.type, event->key(), macro);
-            break;
-        case SignalType::CONTINUOUS_POV:
-            binding = new Binding(device->id, binding_struct.type, event->key(), selected_combobox_id);
-            break;
-        }
+        Binding *binding = binding_struct.Create_binding(device->id, event->key(), macro, selected_combobox_id);
         bindings.append(binding);
         qDebug() << bindings.count();
     }

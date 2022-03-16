@@ -6,6 +6,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++2a
 
 SOURCES += \
+  VJoyConnector.cpp \
+  infobox.cpp \
     main.cpp \
     mainwindow.cpp \
     scanbox.cpp \
@@ -13,6 +15,8 @@ SOURCES += \
 
 HEADERS += \
   Structs.h \
+  VJoyConnector.h \
+  infobox.h \
    mainwindow.h \
    scanbox.h \
 	  public.h \
