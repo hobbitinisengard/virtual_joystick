@@ -34,8 +34,7 @@ struct BindingStruct
 };
 struct Binding
 {
-    // device_id can be between <1;16>. MainWindow::current_device_index refers to a devices vector,
-    //so its corresponding values are device_id-1
+    // device_id can be between <1;16>.
     uint8_t device_id;
     BindingStruct *bindingstruct;
     // mapped keyboard key
@@ -44,8 +43,6 @@ struct Binding
     Direction direction;
     Binding(uint8_t ID, BindingStruct *BINDINGSTRUCT, int KEY, uint16_t MACRO, Direction DIR = Direction::POSITIVE)
         : device_id(ID), bindingstruct(BINDINGSTRUCT), key(KEY), macro(MACRO), direction(DIR)
-    {}
-    ~Binding()
     {}
 };
 
@@ -87,7 +84,7 @@ struct Button_bindingStruct : BindingStruct
 };
 struct Axis_bindingStruct : BindingStruct
 {
-    const std::vector<AxisData*> axisdata {
+    static const std::vector<AxisData*> axisdata {
         new AxisData(HID_USAGE_X, "+X"),
         new AxisData(HID_USAGE_X, "-X", Direction::NEGATIVE),
         new AxisData(HID_USAGE_Y, "+Y"),

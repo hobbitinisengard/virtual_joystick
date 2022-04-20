@@ -6,19 +6,18 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     installEventFilter(this);
-    bs_buttons = new Button_bindingStruct(ui->AllButtons_ComboBox,
+    bs_buttons = std::make_unique<Button_bindingStruct>(ui->AllButtons_ComboBox,
                                               ui->ListWidget_ButtonBindings);
-    bs_axes = new Axis_bindingStruct(ui->AllButtonsAndAxesComboBox,
+    bs_axes = std::make_unique<Axis_bindingStruct>(ui->AllButtonsAndAxesComboBox,
                                      ui->listWidget_AxesBinding);
-    bs_povs = new POV_bindingStruct(ui->AllPovs_ComboBox,
+    bs_povs = std::make_unique<POV_bindingStruct>(ui->AllPovs_ComboBox,
                                     ui->ListWidget_POVBindings);
-    binding_structs.push_back(bs_buttons);
-    binding_structs.push_back(bs_axes);
-    binding_structs.push_back(bs_povs);
-    connector = new VJoyConnector();
+    binding_structs.push_back(bs_buttons.get());
+    binding_structs.push_back(bs_axes.get());
+    binding_structs.push_back(bs_povs.get());
 
     for(auto &binding_struct : binding_structs)
-        binding_struct->Initialize_comboboxes(connector->current_device->id);
+        binding_struct->Initialize_comboboxes(connector.current_device->id);
 }
 void MainWindow::on_actionAbout_triggered()
 {
@@ -31,7 +30,7 @@ void MainWindow::on_actionAbout_triggered()
     info += QString::fromWCharArray((PWSTR)GetvJoyManufacturerString())+ " and updated by <a href='https://github.com/njz3/vJoy'>njz3</a>.<br>";
     info += "DLL version: " + QString::number(VerDll) + "<br>";
     info += "Driver version: " + QString::number(VerDrv) + " ("+QString::fromWCharArray((PWSTR)GetvJoySerialNumberString()) + ")";
-    InfoBox infobox(info);
+    Infobox infobox(info);
 }
 void MainWindow::Quit()
 {   
@@ -85,11 +84,12 @@ std::vector<std::string> MainWindow::split (std::string s, std::string delimiter
 //    { // combobox selected
 //        filepath = ui->comboBox_configs->itemData(curr_index).value<std::string>();
 //    }
-BindingStruct* MainWindow::Get_bindingstruct_of_type(const SignalType type) const
+BindingStruct* MainWindow::get_bindingstruct_of_type(const SignalType type) const
 {
     switch(type){
     case SignalType::BUTTON:
         for(auto &bs : binding_structs){
+
             if(dynamic_cast<Button_bindingStruct*>(bs) != nullptr){
                 return bs;
             }
@@ -130,7 +130,7 @@ int MainWindow::Convert_bindingstruct_to_type(BindingStruct* bs) const
     if(dynamic_cast<POV_bindingStruct*>(bs) != nullptr){
         return (int)SignalType::DISCRETE_POV;
     }
-    throw std::out_of_range("No.");
+    throw std::out_of_range("Much error yes.");
 }
 
 void MainWindow::Load_configuration()
@@ -159,11 +159,11 @@ void MainWindow::Load_configuration()
         int macro = std::stoi(ln[3]);
         Direction direction = (Direction) std::stoi(ln[4]);
 
-        BindingStruct* binding_struct = Get_bindingstruct_of_type(type);
+        BindingStruct* binding_struct = get_bindingstruct_of_type(type);
         bindings.append(new Binding(id,binding_struct,key,macro,direction));
     }
     UpdateName(filepath);
-    Switch_device(connector->current_device->id-1);
+    Switch_device(connector.current_device->id-1);
 }
 //Binding(uint8_t ID, SignalType TYPE, int KEY, uint16_t MACRO, Direction DIR = Direction::POSITIVE)
 void MainWindow::Save_configuration()
@@ -184,7 +184,7 @@ void MainWindow::Save_configuration()
     outf << (int)bind->direction << '\n';
     }
     UpdateName(filepath);
-    int temp = connector->current_device->id-1;
+    int temp = connector.current_device->id-1;
     Switch_device(temp);
 }
 void MainWindow::UpdateName(std::string filepath)
@@ -224,7 +224,7 @@ void MainWindow::on_Button_ScanPOVs_clicked()
 
 void MainWindow::Scan(BindingStruct &binding_struct)
 {
-    ScanBox Scanning_monolog_box(binding_struct, connector->current_device, bindings);
+    ScanBox Scanning_monolog_box(binding_struct, connector.current_device, bindings);
     Scanning_monolog_box.exec();
 }
 void MainWindow::Switch_device(int index)
@@ -233,29 +233,29 @@ void MainWindow::Switch_device(int index)
     int vjoy_index = index+1;
     Clear_Listwidgets();
     //check if device with id of index exists
-    auto device = std::find_if(connector->devices.begin(), connector->devices.end(),
+    auto device = std::find_if(connector.devices.begin(), connector.devices.end(),
                                [vjoy_index](vJDevice *d){return d->id == vjoy_index;});
-    if(device == connector->devices.end())
+    if(device == connector.devices.end())
     {// if not, create device.
         try
         {
-             connector->Create_new_Device(vjoy_index);
+             connector.Create_new_Device(vjoy_index);
         }
         catch(VJD_STAT_BUSY_Exception &e)
         {
-            InfoBox info("This device is already owned by another feeder");
+            Infobox info("This device is already owned by another feeder");
             ui->vjoy_tabs->setCurrentIndex(0);
             return;
         }
         catch(VJD_STAT_MISS_Exception &e)
         {
-             InfoBox info("This vJoy device is not installed or disabled. Feeder stopped.");
+             Infobox info("This vJoy device is not installed or disabled. Feeder stopped.");
             ui->vjoy_tabs->setCurrentIndex(0);
             return;
         }
         catch(...)
         {
-             InfoBox info("vJoy device error. Enable the virtual device using 'Configure vJoy' program. After that, restart this application.");
+             Infobox info("vJoy device error. Enable the virtual device using 'Configure vJoy' program. After that, restart this application.");
             ui->vjoy_tabs->setCurrentIndex(0);
             return;
         }
@@ -264,15 +264,15 @@ void MainWindow::Switch_device(int index)
     { // device exists
 
         qDebug() << "device exists";
-        connector->current_device = *device;
+        connector.current_device = *device;
     }
 
     for(auto &binding_struct : binding_structs)
-        binding_struct->Initialize_comboboxes(connector->current_device->id);
+        binding_struct->Initialize_comboboxes(connector.current_device->id);
     // reconstruct listwidget of bindings
     for(const auto &bind: bindings)
     {
-        if(bind->device_id != connector->current_device->id)
+        if(bind->device_id != connector.current_device->id)
             continue;
         qDebug() << "Bind: " << bind->key;
         QListWidgetItem *i = new QListWidgetItem();
@@ -332,7 +332,7 @@ void MainWindow::Clear_Listwidgets()
 }
 void MainWindow::on_button_CLEAR_clicked()
 {
-    bindings.removeIf([this](Binding *a) { return a->device_id == connector->current_device->id; });
+    bindings.removeIf([this](Binding *a) { return a->device_id == connector.current_device->id; });
     Clear_Listwidgets();
 }
 

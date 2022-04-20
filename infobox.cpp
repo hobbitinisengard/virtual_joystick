@@ -1,6 +1,6 @@
 #include "infobox.h"
 
-InfoBox::InfoBox(const QString &text)
+Infobox::Infobox(const QString &text)
     : QMessageBox()
 {
     QMessageBox msgBox;

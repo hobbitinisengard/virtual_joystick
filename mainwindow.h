@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <functional>
 
 #include <scanbox.h>
 #include <vjdevice.h>
@@ -34,15 +35,15 @@ public:
     inline static const QString latest_link_to_driver = "https://github.com/njz3/vJoy/releases/tag/v2.2.1.1";
     bool eventFilter(QObject *object, QEvent *event) override;
     QList<Binding*> bindings;
-    VJoyConnector *connector;
-    Button_bindingStruct* bs_buttons;
-    Axis_bindingStruct* bs_axes;
-    POV_bindingStruct* bs_povs;
+    VJoyConnector connector {};
+    std::unique_ptr<Button_bindingStruct> bs_buttons;
+    std::unique_ptr<Axis_bindingStruct> bs_axes;
+    std::unique_ptr<POV_bindingStruct> bs_povs;
     inline static bool allow_multiple_keybindings = false;
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    BindingStruct *Get_bindingstruct_of_type(const SignalType type) const;
+    BindingStruct *get_bindingstruct_of_type(const SignalType type) const;
     int Convert_bindingstruct_to_type(BindingStruct *bs) const;
 private slots:
     void on_Button_ScanBinding_clicked();

@@ -20,7 +20,7 @@ LRESULT CALLBACK MyLowLevelKeyBoardProc(int nCode, WPARAM wParam, LPARAM lParam)
         //Get the key information
         KBDLLHOOKSTRUCT cKey = *((KBDLLHOOKSTRUCT*)lParam);
 
-        wchar_t buffer[5];
+        //wchar_t buffer[5];
 
         //get the keyboard state
         BYTE keyboard_state[256];
@@ -31,7 +31,7 @@ LRESULT CALLBACK MyLowLevelKeyBoardProc(int nCode, WPARAM wParam, LPARAM lParam)
 //        UpdateKeyState(keyboard_state, VK_MENU);
 
         //Get keyboard layout
-        HKL keyboard_layout = GetKeyboardLayout(0);
+        //HKL keyboard_layout = GetKeyboardLayout(0);
 
         //Get the name
         char lpszName[0X100] = {0};
@@ -40,7 +40,7 @@ LRESULT CALLBACK MyLowLevelKeyBoardProc(int nCode, WPARAM wParam, LPARAM lParam)
         dwMsg += cKey.scanCode << 16;
         dwMsg += cKey.flags << 24;
 
-        //int i = GetKeyNameText(dwMsg, (LPTSTR)lpszName, 255);
+        int i = GetKeyNameText(dwMsg, (LPTSTR)lpszName, 255);
 
         //Try to convert the key information
         //int result = ToUnicodeEx(cKey.vkCode, cKey.scanCode, keyboard_state, buffer, 4, 0, keyboard_layout);

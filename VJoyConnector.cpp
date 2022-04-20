@@ -4,7 +4,7 @@ VJoyConnector::VJoyConnector()
     WORD VerDll, VerDrv;
     if (!DriverMatch(&VerDll, &VerDrv))
     {
-        InfoBox infoBox("DLL and driver versions do not match. Remove vjoy driver you currently have and"
+        Infobox infoBox("DLL and driver versions do not match. Remove vjoy driver you currently have and"
                 " install newer one here:<a href='" + latest_link_to_driver + "'>Link</a>");
         qCritical("Failed\r\nvJoy Driver (version %04x) does not match\
             vJoyInterface DLL (version %04x)\n", VerDrv ,VerDll);
@@ -13,7 +13,7 @@ VJoyConnector::VJoyConnector()
 
     if(!vJoyEnabled() || GetVJDStatus(1) == VJD_STAT_MISS || GetVJDStatus(1) == VJD_STAT_UNKN)
     {
-        InfoBox infoBox("Device 1 is not active. Enable it in 'Configure VJoy' program.");
+        Infobox infoBox("Device 1 is not active. Enable it in 'Configure VJoy' program.");
     }
     ResetAll();
 }

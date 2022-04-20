@@ -2,10 +2,10 @@
 #define INFOBOX_H
 #include <QMessageBox>
 
-class InfoBox : QMessageBox
+class Infobox : QMessageBox
 {
 public:
-    InfoBox(const QString &text);
+    Infobox(const QString &text);
 };
 
 #endif // INFOBOX_H
