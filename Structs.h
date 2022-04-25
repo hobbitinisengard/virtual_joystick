@@ -84,7 +84,7 @@ struct Button_bindingStruct : BindingStruct
 };
 struct Axis_bindingStruct : BindingStruct
 {
-    static const std::vector<AxisData*> axisdata {
+    inline static const std::vector<AxisData*> axisdata {
         new AxisData(HID_USAGE_X, "+X"),
         new AxisData(HID_USAGE_X, "-X", Direction::NEGATIVE),
         new AxisData(HID_USAGE_Y, "+Y"),

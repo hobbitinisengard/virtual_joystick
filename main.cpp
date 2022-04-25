@@ -34,9 +34,10 @@ LRESULT CALLBACK MyLowLevelKeyBoardProc(int nCode, WPARAM wParam, LPARAM lParam)
         //HKL keyboard_layout = GetKeyboardLayout(0);
 
         //Get the name
-        char lpszName[0X100] = {0};
+        char lpszName[0x100] = {0};
 
         DWORD dwMsg = 1;
+        int ik;
         dwMsg += cKey.scanCode << 16;
         dwMsg += cKey.flags << 24;
 
